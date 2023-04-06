@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1098804530585",
+    "firebase_url": "https://talkmate-8bce0-default-rtdb.firebaseio.com",
+    "project_id": "talkmate-8bce0",
+    "storage_bucket": "talkmate-8bce0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1098804530585:android:73d78b45e51d31a28b1708",
+        "android_client_info": {
+          "package_name": "com.aman.talkmate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1098804530585-jn3c3ri7i0u0mtovim43lrgehs3nrvhn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aman.talkmate",
+            "certificate_hash": "4f97e02055c7fd705283df924a881b35c470a561"
+          }
+        },
+        {
+          "client_id": "1098804530585-p76ldvutfre4p9l5bqqqds30g64m8ho2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNI-uXdU4Qvb2mV_Q4TXh4ycyBuHM5zhY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1098804530585-p76ldvutfre4p9l5bqqqds30g64m8ho2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
