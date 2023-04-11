@@ -63,7 +63,20 @@ public class MessageAdaptor extends RecyclerView.Adapter {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 
         if (holder.getClass() == SenderViewHolder.class) {
-            ((SenderViewHolder) holder).tvSenderMessage.setText(dataHolder.get(position).getContent());
+            ConversationReplyModelClass conversation = new ConversationReplyModelClass(dataHolder.get(position).getContent());
+            if (conversation.getContent().equals("")){
+                ((SenderViewHolder)holder).tvSenderMessage.setText(conversation.getMessage());
+            }else {
+                if (conversation.getRole().equals("user")){
+                    ((SenderViewHolder)holder).tvSenderMessage.setText(conversation.getMessage());
+                    ((SenderViewHolder)holder).tvSenderMessageReply.setVisibility(View.VISIBLE);
+                    ((SenderViewHolder)holder).tvSenderMessageReply.setText(conversation.getContent());
+                }else {
+                    ((SenderViewHolder)holder).tvSenderMessage.setText(conversation.getMessage());
+                    ((SenderViewHolder)holder).tvReceiverMessageReply.setVisibility(View.VISIBLE);
+                    ((SenderViewHolder)holder).tvReceiverMessageReply.setText(conversation.getContent());
+                }
+            }
 
         } else {
             ((ReceiverViewHolder) holder).tvReceiverMessage.setText(dataHolder.get(position).getContent());
@@ -90,11 +103,13 @@ public class MessageAdaptor extends RecyclerView.Adapter {
 
     public class ReceiverViewHolder extends RecyclerView.ViewHolder {
 
-        TextView tvReceiverMessage;
+        TextView tvReceiverMessage,tvSenderMessageReply, tvReceiverMessageReply;
 
         public ReceiverViewHolder(@NonNull View itemView) {
             super(itemView);
             tvReceiverMessage = itemView.findViewById(R.id.textView_receiver);
+            tvSenderMessageReply = itemView.findViewById(R.id.textView_sender_reply);
+            tvReceiverMessageReply = itemView.findViewById(R.id.textView_receiver_reply);
         }
         public void OptionMenuCall(View view){
             openOptionMenu(view);
@@ -103,11 +118,13 @@ public class MessageAdaptor extends RecyclerView.Adapter {
 
     public class SenderViewHolder extends RecyclerView.ViewHolder {
 
-        TextView tvSenderMessage;
+        TextView tvSenderMessage, tvSenderMessageReply, tvReceiverMessageReply;
 
         public SenderViewHolder(@NonNull View itemView) {
             super(itemView);
             tvSenderMessage = itemView.findViewById(R.id.textView_sender);
+            tvSenderMessageReply = itemView.findViewById(R.id.textView_sender_reply);
+            tvReceiverMessageReply = itemView.findViewById(R.id.textView_receiver_reply);
         }
         public void OptionMenuCall(View view){
             openOptionMenu(view);

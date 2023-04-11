@@ -1,14 +1,5 @@
 package com.aman.talkmate;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.PopupMenu;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
@@ -18,15 +9,23 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.aman.talkmate.databinding.ActivityMainBinding;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,10 +34,9 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
+import java.util.Random;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -50,19 +48,112 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    ActivityMainBinding binding;
     public static final MediaType JSON
             = MediaType.get("application/json; charset=utf-8");
-    OkHttpClient client = new OkHttpClient();
     private final int REQUEST_CODE_SPEECH_INPUT = 1000;
+    private final JSONArray messages = new JSONArray();
+    private final ArrayList<messageModelClass> messageList = new ArrayList<>();
+    ActivityMainBinding binding;
+    String userName;
+    OkHttpClient client = new OkHttpClient();
     SharedPreferences sharedPreferences;
     WelcomeActivity welcomeActivity = new WelcomeActivity();
-    private DatabaseReference reference;
-    private JSONArray jsonArray, messages = new JSONArray();
     JSONObject initialPrompt = new JSONObject();
+    boolean createNewChat = false;
+    private DatabaseReference reference;
+    private JSONArray jsonArray;
     private MessageAdaptor messageAdapter;
-    private ArrayList<messageModelClass> messageList = new ArrayList<>();
+    String replyMessage = "";
+    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
+        private final Color replyBackgroundColor = Color.valueOf(Color.parseColor("#FFC107"));
+        private final Color replyTextColor = Color.valueOf(Color.parseColor("#000000"));
 
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+            return false;
+        }
+
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            if (direction == ItemTouchHelper.RIGHT) {
+                int position = viewHolder.getAdapterPosition();
+//                binding.editTextMessage.setText(messageList.get(position).getContent());
+                binding.imageButtonCancelReply.setVisibility(View.VISIBLE);
+                if (viewHolder.getItemViewType() == messageAdapter.SENDER_VIEW_TYPE) {
+                    if (binding.textViewReceiverReply.getVisibility() == View.VISIBLE) {
+                        binding.textViewReceiverReply.setVisibility(View.INVISIBLE);
+                    }
+                    binding.textViewSenderReply.setVisibility(View.VISIBLE);
+                    binding.textViewSenderReply.setText(messageList.get(position).getContent());
+                } else {
+                    if (binding.textViewSenderReply.getVisibility() == View.VISIBLE) {
+                        binding.textViewSenderReply.setVisibility(View.INVISIBLE);
+                    }
+                    binding.textViewReceiverReply.setVisibility(View.VISIBLE);
+                    binding.textViewReceiverReply.setText(messageList.get(position).getContent());
+                }
+                replyMessage = "reply:{"+"role:"+messageList.get(position).getRole() + "," + "content:"+ messageList.get(position).getContent() + "}";
+                messageAdapter.notifyDataSetChanged();
+            } else {
+                int position = viewHolder.getAdapterPosition();
+                messageList.remove(position);
+                messageAdapter.notifyDataSetChanged();
+            }
+        }
+
+        @Override
+        public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                View itemView = viewHolder.itemView;
+                Paint paint = new Paint();
+                paint.setColor(getResources().getColor(R.color.teal_700));
+                paint.setTextSize(getResources().getDimension(R.dimen.font_size));
+                paint.setTextAlign(Paint.Align.LEFT);
+                paint.setStyle(Paint.Style.FILL_AND_STROKE);
+
+                float replyTextSize = getResources().getDimension(R.dimen.font_size);
+
+                if (dX > 0) {
+                    // Swiping right to reply
+                    System.out.println("dX: " + dX);
+                    c.drawRect((float) itemView.getLeft(), (float) itemView.getTop(), dX, (float) itemView.getBottom(), paint);
+                    paint.setColor(getResources().getColor(R.color.black));
+                    paint.setTextSize(replyTextSize);
+                    c.drawText("Reply", dX - 200, (float) itemView.getTop() + (itemView.getHeight() / 2) - ((paint.descent() + paint.ascent()) / 2), paint);
+                }
+                if (dX < 0) {
+                    // Swiping left to delete
+                    System.out.println("dX: " + dX);
+                    System.out.println("dX: " + (itemView.getWidth() + dX));
+                    System.out.println("itemweidth: " + itemView.getWidth());
+                    c.drawRect((float) itemView.getWidth() + dX, (float) itemView.getTop(), itemView.getRight(), (float) itemView.getBottom(), paint);
+                    paint.setColor(getResources().getColor(R.color.black));
+                    paint.setTextSize(replyTextSize);
+                    c.drawText("Delete", (float) itemView.getWidth() + dX + 100, (float) itemView.getTop() + (itemView.getHeight() / 2) - ((paint.descent() + paint.ascent()) / 2), paint);
+                }
+            }
+        }
+    };
+
+    public static String generateRandomPassword(int max_length) {
+        Random rn = new Random();
+        StringBuilder sb = new StringBuilder(max_length);
+        try {
+            String numberChars = "0123456789";
+            String allowedChars = "";
+            //this will fulfill the requirements of atleast one character of a type.
+            allowedChars += numberChars;
+            sb.append(numberChars.charAt(rn.nextInt(numberChars.length() - 1)));
+            //fill the allowed length from different chars now.
+            for (int i = sb.length(); i < max_length; ++i) {
+                sb.append(allowedChars.charAt(rn.nextInt(allowedChars.length())));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
             binding.welcomeText.setVisibility(View.VISIBLE);
             try {
                 initialPrompt.put("role", "system");
-                initialPrompt.put("content", "You are a Advance AI, You have act like BestFriend of AMAN");
+                initialPrompt.put("content", "You are Moon, user will call you by this name. you are user's bestFriend. I'm Aman.");
                 messages.put(initialPrompt);
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -112,7 +203,11 @@ public class MainActivity extends AppCompatActivity {
         binding.imageButtonSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                binding.linearLayoutRetry.setVisibility(View.INVISIBLE);
                 String question = binding.editTextMessage.getText().toString().trim();
+                if (replyMessage!=""){
+                    question = replyMessage + "\n" + question;
+                }
                 addToChat(question, messageModelClass.SENT_BY_ME);
 //                updateMessagesArray(question,messageModelClass.SENT_BY_ME);
                 APICall(question);
@@ -122,81 +217,77 @@ public class MainActivity extends AppCompatActivity {
                 binding.imageTalkMateLogo.setVisibility(View.GONE);
             }
         });
+        binding.linearLayoutRetry.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                messages.remove(messages.length() - 1);
+                messages.remove(messages.length() - 1);
+                messageList.remove(messageList.size() - 1);
+                binding.linearLayoutRetry.setVisibility(View.INVISIBLE);
+                messageAdapter.notifyDataSetChanged();
+                System.out.println("messages(()): " + messages);
+                System.out.println("messageList(()): " + messageList);
+                APICall(messageList.get(messageList.size() - 1).getContent());
+
+            }
+        });
+
+        binding.imageButtonCancelReply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                binding.textViewReceiverReply.setVisibility(View.GONE);
+                binding.textViewSenderReply.setVisibility(View.GONE);
+                binding.imageButtonCancelReply.setVisibility(View.GONE);
+            }
+        });
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
         itemTouchHelper.attachToRecyclerView(binding.recyclerView);
 
+        binding.toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.menu_logout:
+                        createNewChat = true;
+                        Toast.makeText(MainActivity.this, "Storing Chat...", Toast.LENGTH_SHORT).show();
+                        storeConversationToDatabase(messages);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString(welcomeActivity.USER_NAME, "AMAN_DHAKAR" + generateRandomPassword(5));
+                        editor.apply();
+                        finish();
+                        return true;
+                    case R.id.menu_edit:
+
+                        return true;
+                }
+                return false;
+            }
+        });
+
     }
-
-    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
-        private final Color replyBackgroundColor = Color.valueOf(Color.parseColor("#FFC107"));
-        private final Color replyTextColor = Color.valueOf(Color.parseColor("#000000"));
-
-        @Override
-        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            return false;
-        }
-
-        @Override
-        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-            if (direction == ItemTouchHelper.RIGHT) {
-                int position = viewHolder.getAdapterPosition();
-                binding.editTextMessage.setText(messageList.get(position).getContent());
-                messageAdapter.notifyDataSetChanged();
-            } else {
-                int position = viewHolder.getAdapterPosition();
-                messageList.remove(position);
-                messageAdapter.notifyDataSetChanged();
-            }
-        }
-
-        @Override
-        public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-            if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                View itemView = viewHolder.itemView;
-                Paint paint = new Paint();
-                paint.setColor(getResources().getColor(R.color.teal_700));
-                paint.setTextSize(getResources().getDimension(R.dimen.font_size));
-                paint.setTextAlign(Paint.Align.LEFT);
-                paint.setStyle(Paint.Style.FILL_AND_STROKE);
-
-                float replyTextSize = getResources().getDimension(R.dimen.font_size);
-
-                if (dX > 0) {
-                    // Swiping right to reply
-                    System.out.println("dX: " + dX);
-                    c.drawRect((float) itemView.getLeft(), (float) itemView.getTop(), dX, (float) itemView.getBottom(), paint);
-                    paint.setColor(getResources().getColor(R.color.black));
-                    paint.setTextSize(replyTextSize);
-                    c.drawText("Reply", (float) dX - 200, (float) itemView.getTop() + (itemView.getHeight() / 2) - ((paint.descent() + paint.ascent()) / 2), paint);
-                }
-                if (dX < 0) {
-                    // Swiping left to delete
-                    System.out.println("dX: " + dX);
-                    System.out.println("dX: " + (itemView.getWidth() + dX));
-                    System.out.println("itemweidth: " + itemView.getWidth());
-                    c.drawRect((float) itemView.getWidth() + dX, (float) itemView.getTop(), itemView.getRight(), (float) itemView.getBottom(), paint);
-                    paint.setColor(getResources().getColor(R.color.black));
-                    paint.setTextSize(replyTextSize);
-                    c.drawText("Delete", (float) itemView.getWidth() + dX + 100, (float) itemView.getTop() + (itemView.getHeight() / 2) - ((paint.descent() + paint.ascent()) / 2), paint);
-                }
-            }
-        }
-    };
-
 
     @Override
     protected void onStop() {
         super.onStop();
+        if (!createNewChat) {
+            Toast.makeText(MainActivity.this, "Storing Chat...", Toast.LENGTH_SHORT).show();
+            storeConversationToDatabase(messages);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
         Toast.makeText(MainActivity.this, "Storing Chat...", Toast.LENGTH_SHORT).show();
         storeConversationToDatabase(messages);
     }
 
-
     void storeConversationToDatabase(JSONArray messages) {
         String messagesInString = messages.toString();
-        reference.child("AMAN_DHAKAR").setValue(messagesInString)
+        userName = sharedPreferences.getString(welcomeActivity.USER_NAME, null);
+        System.out.println("userName: " + userName);
+        reference.child(userName).setValue(messagesInString)
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
@@ -223,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
         binding.recyclerView.setLayoutManager(linearLayoutManager);
     }
 
-    private void updateMessagesArray(String message, String sentBy){
+    private void updateMessagesArray(String message, String sentBy) {
         JSONObject messageObj3 = new JSONObject();
         try {
             messageObj3.put("role", sentBy);
@@ -239,6 +330,8 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                binding.dotLoadingAnimationView.setVisibility(View.INVISIBLE);
+                binding.imageButtonSend.setVisibility(View.VISIBLE);
                 messageList.add(new messageModelClass(sentBy, message));
                 messageAdapter.notifyDataSetChanged();
                 binding.recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
@@ -249,6 +342,8 @@ public class MainActivity extends AppCompatActivity {
     void APICall(String question) {
         //okhttp
         messageList.add(new messageModelClass(messageModelClass.SENT_BY_BOT, "Typing... "));
+        binding.dotLoadingAnimationView.setVisibility(View.VISIBLE);
+        binding.imageButtonSend.setVisibility(View.INVISIBLE);
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("model", "gpt-3.5-turbo");
@@ -276,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 addResponse("Failed to response due to " + e.getMessage());
-//                isErrorOccurred = true;
+                retryAndReSendMessage();
             }
 
             @Override
@@ -284,7 +379,6 @@ public class MainActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     try {
                         String responseBody = response.body().string();
-                        Gson gson = new Gson();
                         JSONObject jsonObject = new JSONObject(responseBody);
                         JSONArray jsonArray1 = jsonObject.getJSONArray("choices");
                         String result = jsonArray1.getJSONObject(0).getJSONObject("message").getString("content");
@@ -296,9 +390,29 @@ public class MainActivity extends AppCompatActivity {
                         throw new RuntimeException(e);
                     }
                 } else {
-                    addResponse("Failed to load response due to " + response.body().toString());
+                    try {
+                        String responseBody = response.body().string();
+                        JSONObject jsonObject = new JSONObject(responseBody);
+                        String result = jsonObject.getString("error");
+                        System.out.println("result: " + result);
+                        addResponse("Failed to load response due to " + result);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+
 //                    isErrorOccurred = true;
                 }
+            }
+        });
+    }
+
+    private void retryAndReSendMessage() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                binding.linearLayoutRetry.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -368,6 +482,7 @@ public class MainActivity extends AppCompatActivity {
         messageList.remove(messageList.size() - 1);
         addToChat(response, messageModelClass.SENT_BY_BOT);
     }
+
     void speechToText() {
         // intent to show speech to text dialog
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);

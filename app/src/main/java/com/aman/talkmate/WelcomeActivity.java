@@ -19,10 +19,12 @@ import com.google.firebase.database.ValueEventListener;
 
 public class WelcomeActivity extends AppCompatActivity {
     ActivityWelcomeBinding binding;
+    String userName;
     SharedPreferences sharedPreferences;
     public final String TALKMATE_SHARED_PREF = "TalkMateDB";
     public final String IS_NEW_USER = "newUser";
     public final String IS_LOGGED_IN = "isLoggedIn";
+    public final String USER_NAME = "UserName";
     private String REQUEST_CODE_NAME = "request_code";
     private String REQUEST_ID = "WelcomeActivity";
     private DatabaseReference reference;
@@ -37,13 +39,16 @@ public class WelcomeActivity extends AppCompatActivity {
 
         //Check if User is already login then go direct to HomeScreen
         Boolean isLoggedIn = sharedPreferences.getBoolean(IS_LOGGED_IN,false);
+        System.out.println("isLoggedIn: " + isLoggedIn);
         if (isLoggedIn){
             binding.buttonLogin.setVisibility(View.INVISIBLE);
             binding.loadingAnimationView.setVisibility(View.VISIBLE);
             Toast.makeText(this, "Already LoggedIn", Toast.LENGTH_SHORT).show();
 
             //load prev chat from DB
-            reference.child("AMAN_DHAKAR").addValueEventListener(new ValueEventListener() {
+            userName = sharedPreferences.getString(USER_NAME,null);
+            System.out.println("userName: " + userName);
+            reference.child(userName).addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);

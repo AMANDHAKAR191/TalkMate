@@ -1,33 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="10dp">
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@drawable/baseline_person_pin_24"
-        app:layout_constraintBottom_toBottomOf="@+id/textView_sender"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <TextView
-        android:id="@+id/textView_sender"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="10dp"
+        android:layout_height="match_parent"
         android:background="@drawable/background_sender_bubble"
         android:padding="10dp"
-        android:text="sample text by me"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/imageView"
-        app:layout_constraintStart_toStartOf="@+id/guideline"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline1"
+        tools:layout_editor_absoluteY="10dp">
 
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/baseline_person_pin_24"
+            app:layout_constraintBottom_toBottomOf="@+id/textView_sender"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/textView_sender"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:padding="10dp"
+            android:text="sample text by me"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/imageView"
+            app:layout_constraintStart_toStartOf="@+id/guideline" />
+
+
+        <TextView
+            android:id="@+id/textView_sender_reply"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/background_sender_bubble"
+            android:maxWidth="200dp"
+            android:maxLines="3"
+            android:padding="10dp"
+            android:text="sample text by me"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/textView_sender"
+            app:layout_constraintEnd_toEndOf="@+id/textView_sender" />
+
+        <TextView
+            android:id="@+id/textView_receiver_reply"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/background_receiver_bubble"
+            android:maxWidth="200dp"
+            android:maxLines="3"
+            android:padding="10dp"
+            android:text="sample text by chatGPT"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/textView_sender"
+            app:layout_constraintEnd_toEndOf="@+id/textView_sender" />
+
+        <ImageView
+            android:id="@+id/imageView_reply"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="10dp"
+            android:src="@drawable/baseline_reply_24"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/textView_sender"
+            app:layout_constraintStart_toEndOf="@+id/textView_sender" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.00" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
     <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline"
+        android:id="@+id/guideline1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
